@@ -1,35 +1,61 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// Page principale - Démonstration des différentes vues
+import React, { useState } from 'react';
+import Dashboard from './Components/Dashboard';
+import KanbanBoard from './Components/Tasks/KanbanBoard';
+import CalendarView from './Components/Calendar/CalendarView';
+import NotesList from './Components/Notes/NotesList';
+import TimeTracker from './Components/TimeTracker';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function HomePage() {
+  const [activeView, setActiveView] = useState('dashboard');
+  const [selectedNote, setSelectedNote] = useState(null);
+
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'tasks':
+        return <KanbanBoard />;
+      case 'calendar':
+        return <CalendarView />;
+      case 'notes':
+        return <NotesList onSelectNote={setSelectedNote} selectedNote={selectedNote} />;
+      case 'time':
+        return <TimeTracker />;
+      default:
+        return <Dashboard />;
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="min-h-screen">
+      {/* Navigation demo rapide */}
+      <div className="mb-8 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: 'dashboard', label: 'Tableau de bord' },
+            { id: 'tasks', label: 'Tâches' },
+            { id: 'calendar', label: 'Calendrier' },
+            { id: 'notes', label: 'Notes' },
+            { id: 'time', label: 'Temps' }
+          ].map((view) => (
+            <button
+              key={view.id}
+              onClick={() => setActiveView(view.id)}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                activeView === view.id
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {view.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
 
-export default App
+      {/* Vue active */}
+      {renderActiveView()}
+    </div>
+  );
+}
