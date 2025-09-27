@@ -5,6 +5,7 @@ import KanbanBoard from './Components/Tasks/KanbanBoard';
 import CalendarView from './Components/Calendar/CalendarView';
 import NotesList from './Components/Notes/NotesList';
 import TimeTracker from './Components/TimeTracker';
+import Layout from './Layout';
 
 export default function HomePage() {
   const [activeView, setActiveView] = useState('dashboard');
@@ -53,9 +54,11 @@ export default function HomePage() {
           ))}
         </div>
       </div>
-
       {/* Vue active */}
-      {renderActiveView()}
+      <Layout activeView={activeView} onNavigate={setActiveView}>
+        {renderActiveView()}
+      </Layout>
+
     </div>
   );
 }
