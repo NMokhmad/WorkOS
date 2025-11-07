@@ -3,9 +3,11 @@ import React from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
+  Folder,
   Calendar,
   FileText,
   Clock,
+  BarChart3,
   Settings,
   LogOut
 } from 'lucide-react';
@@ -14,9 +16,11 @@ import { useAuth } from '../contexts/AuthContext';
 const menuItems = [
   { icon: LayoutDashboard, label: 'Tableau de bord', id: 'dashboard' },
   { icon: CheckSquare, label: 'Tâches', id: 'tasks' },
+  { icon: Folder, label: 'Projets', id: 'projects' },
   { icon: Calendar, label: 'Calendrier', id: 'calendar' },
   { icon: FileText, label: 'Notes', id: 'notes' },
   { icon: Clock, label: 'Temps', id: 'time' },
+  { icon: BarChart3, label: 'Rapports', id: 'reports' },
 ];
 
 export default function Sidebar({ isOpen, onClose, activeView, onNavigate }) {

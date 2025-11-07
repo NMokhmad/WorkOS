@@ -6,6 +6,24 @@ const router = express.Router();
 
 router.use(authenticate);
 
+// Mapper les champs frontend -> backend
+const mapToBackend = (data) => ({
+  title: data.title,
+  description: data.description,
+  startDatetime: data.startDate,
+  endDatetime: data.endDate,
+  projectId: data.projectId,
+  location: data.location,
+  isAllDay: data.isAllDay
+});
+
+// Mapper les champs backend -> frontend
+const mapToFrontend = (event) => ({
+  ...event.toJSON(),
+  startDate: event.startDatetime,
+  endDate: event.endDatetime
+});
+
 router.get('/', async (req, res) => {
   try {
     const events = await db.Event.findAll({
@@ -13,20 +31,27 @@ router.get('/', async (req, res) => {
       include: [{ model: db.Project, as: 'project', attributes: ['id', 'name', 'color'] }],
       order: [['startDatetime', 'ASC']]
     });
-    res.json({ events });
+
+    const mappedEvents = events.map(mapToFrontend);
+    res.json({ events: mappedEvents });
   } catch (error) {
+    console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
   }
 });
 
 router.post('/', async (req, res) => {
   try {
-    const event = await db.Event.create({
-      ...req.body,
+    const eventData = {
+      ...mapToBackend(req.body),
       userId: req.userId
-    });
-    res.status(201).json({ event });
+    };
+
+    const event = await db.Event.create(eventData);
+    const mappedEvent = mapToFrontend(event);
+    res.status(201).json({ event: mappedEvent });
   } catch (error) {
+    console.error('Error creating event:', error);
     res.status(500).json({ error: 'Failed to create event' });
   }
 });
@@ -39,9 +64,14 @@ router.put('/:id', async (req, res) => {
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
-    await event.update(req.body);
-    res.json({ event });
+
+    const eventData = mapToBackend(req.body);
+    await event.update(eventData);
+
+    const mappedEvent = mapToFrontend(event);
+    res.json({ event: mappedEvent });
   } catch (error) {
+    console.error('Error updating event:', error);
     res.status(500).json({ error: 'Failed to update event' });
   }
 });
@@ -57,6 +87,7 @@ router.delete('/:id', async (req, res) => {
     await event.destroy();
     res.json({ message: 'Event deleted' });
   } catch (error) {
+    console.error('Error deleting event:', error);
     res.status(500).json({ error: 'Failed to delete event' });
   }
 });

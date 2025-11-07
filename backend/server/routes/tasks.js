@@ -109,7 +109,8 @@ router.post('/:id/stop', async (req, res) => {
     // Calculate elapsed time
     const endedAt = new Date();
     const startedAt = new Date(task.timerStartedAt);
-    const durationSeconds = Math.floor((endedAt - startedAt) / 1000);
+    // Use getTime() to get milliseconds since epoch to avoid timezone issues
+    const durationSeconds = Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000);
 
     // Create TimeEntry
     const timeEntry = await db.TimeEntry.create({

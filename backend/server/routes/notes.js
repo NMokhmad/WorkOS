@@ -21,27 +21,58 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
+    const { tagIds, ...noteData } = req.body;
     const note = await db.Note.create({
-      ...req.body,
+      ...noteData,
       userId: req.userId
     });
-    res.status(201).json({ note });
+
+    // Associer les tags si fournis
+    if (tagIds && Array.isArray(tagIds) && tagIds.length > 0) {
+      await note.setTags(tagIds);
+    }
+
+    // Recharger la note avec les tags
+    const noteWithTags = await db.Note.findByPk(note.id, {
+      include: [{ model: db.Tag, as: 'tags', through: { attributes: [] } }]
+    });
+
+    res.status(201).json({ note: noteWithTags });
   } catch (error) {
+    console.error('Error creating note:', error);
     res.status(500).json({ error: 'Failed to create note' });
   }
 });
 
 router.put('/:id', async (req, res) => {
   try {
+    const { tagIds, ...noteData } = req.body;
     const note = await db.Note.findOne({
       where: { id: req.params.id, userId: req.userId }
     });
     if (!note) {
       return res.status(404).json({ error: 'Note not found' });
     }
-    await note.update(req.body);
-    res.json({ note });
+
+    await note.update(noteData);
+
+    // Mettre à jour les tags si fournis
+    if (tagIds !== undefined) {
+      if (Array.isArray(tagIds) && tagIds.length > 0) {
+        await note.setTags(tagIds);
+      } else {
+        await note.setTags([]);
+      }
+    }
+
+    // Recharger la note avec les tags
+    const noteWithTags = await db.Note.findByPk(note.id, {
+      include: [{ model: db.Tag, as: 'tags', through: { attributes: [] } }]
+    });
+
+    res.json({ note: noteWithTags });
   } catch (error) {
+    console.error('Error updating note:', error);
     res.status(500).json({ error: 'Failed to update note' });
   }
 });

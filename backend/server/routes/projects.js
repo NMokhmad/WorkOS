@@ -12,8 +12,32 @@ router.get('/', async (req, res) => {
       where: { userId: req.userId },
       order: [['createdAt', 'DESC']]
     });
-    res.json({ projects });
+
+    // Enrichir chaque projet avec ses statistiques
+    const projectsWithStats = await Promise.all(
+      projects.map(async (project) => {
+        // Compter les tâches par statut
+        const tasks = await db.Task.findAll({
+          where: { projectId: project.id, userId: req.userId },
+          attributes: ['status', 'timeSpent']
+        });
+
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(t => t.status === 'done').length;
+        const totalTimeSpent = tasks.reduce((sum, t) => sum + (t.timeSpent || 0), 0);
+
+        return {
+          ...project.toJSON(),
+          totalTasks,
+          completedTasks,
+          totalTimeSpent
+        };
+      })
+    );
+
+    res.json({ projects: projectsWithStats });
   } catch (error) {
+    console.error('Error fetching projects:', error);
     res.status(500).json({ error: 'Failed to fetch projects' });
   }
 });

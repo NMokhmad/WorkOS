@@ -15,6 +15,8 @@ import taskRoutes from './routes/tasks.js';
 import noteRoutes from './routes/notes.js';
 import eventRoutes from './routes/events.js';
 import timeRoutes from './routes/time.js';
+import searchRoutes from './routes/search.js';
+import tagRoutes from './routes/tags.js';
 
 dotenv.config();
 
@@ -55,6 +57,8 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/time', timeRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/tags', tagRoutes);
 
 // Route 404
 app.use((req, res) => {
