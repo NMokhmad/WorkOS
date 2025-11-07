@@ -5,6 +5,7 @@ import KanbanBoard from './Components/Tasks/KanbanBoard';
 import CalendarView from './Components/Calendar/CalendarView';
 import NotesList from './Components/Notes/NotesList';
 import TimeTracker from './Components/TimeTracker';
+import Settings from './pages/Settings';
 import Layout from './Layout';
 import Auth from './pages/Auth';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -41,6 +42,8 @@ function HomePage() {
         return <NotesList onSelectNote={setSelectedNote} selectedNote={selectedNote} />;
       case 'time':
         return <TimeTracker />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard />;
     }

@@ -108,6 +108,14 @@ export const tasksAPI = {
   delete: (id) => apiRequest(`/tasks/${id}`, {
     method: 'DELETE',
   }),
+
+  startTimer: (id) => apiRequest(`/tasks/${id}/start`, {
+    method: 'POST',
+  }),
+
+  stopTimer: (id) => apiRequest(`/tasks/${id}/stop`, {
+    method: 'POST',
+  }),
 };
 
 // ===========================================

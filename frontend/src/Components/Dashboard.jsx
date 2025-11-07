@@ -1,73 +1,153 @@
 // Dashboard - Vue d'ensemble avec statistiques et activité récente
-import React from 'react';
-import { 
-  CheckSquare, 
-  Clock, 
-  FolderOpen, 
+import { useState, useEffect } from 'react';
+import {
+  CheckSquare,
+  Clock,
+  FolderOpen,
   TrendingUp,
-  Calendar,
-  Target
+  Target,
+  Loader
 } from 'lucide-react';
-
-const stats = [
-  {
-    icon: CheckSquare,
-    title: 'Tâches en cours',
-    value: '12',
-    change: '+3 cette semaine',
-    color: 'from-blue-500 to-blue-600'
-  },
-  {
-    icon: Clock,
-    title: "Temps aujourd'hui",
-    value: '6h 24m',
-    change: '+45m par rapport à hier',
-    color: 'from-green-500 to-green-600'
-  },
-  {
-    icon: FolderOpen,
-    title: 'Projets actifs',
-    value: '5',
-    change: '2 en retard',
-    color: 'from-purple-500 to-purple-600'
-  },
-  {
-    icon: Target,
-    title: 'Objectifs atteints',
-    value: '85%',
-    change: '+12% ce mois',
-    color: 'from-orange-500 to-orange-600'
-  }
-];
-
-const recentTasks = [
-  { id: 1, title: 'Révision du design système', project: 'Design', time: '2h 30m', status: 'en cours' },
-  { id: 2, title: 'Réunion équipe produit', project: 'Management', time: '1h 00m', status: 'terminé' },
-  { id: 3, title: 'Développement API auth', project: 'Backend', time: '3h 15m', status: 'en cours' },
-  { id: 4, title: 'Tests utilisateurs', project: 'UX Research', time: '45m', status: 'planifié' }
-];
+import { useAuth } from '../contexts/AuthContext';
+import { projectsAPI, tasksAPI, timeAPI } from '../services/api';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    tasksInProgress: 0,
+    timeToday: '0h 0m',
+    activeProjects: 0,
+    completionRate: 0
+  });
+  const [recentTasks, setRecentTasks] = useState([]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Charger les données en parallèle
+      const [tasksData, projectsData, timeData] = await Promise.all([
+        tasksAPI.getAll(),
+        projectsAPI.getAll(),
+        timeAPI.getAll({ date: new Date().toISOString().split('T')[0] })
+      ]);
+
+      // Calculer les statistiques
+      const tasks = tasksData.tasks || [];
+      const projects = projectsData.projects || [];
+      const timeEntries = timeData.timeEntries || [];
+
+      const tasksInProgress = tasks.filter(t => t.status === 'inProgress').length;
+      const activeProjects = projects.filter(p => p.status === 'active').length;
+      const completedTasks = tasks.filter(t => t.status === 'done').length;
+      const completionRate = tasks.length > 0
+        ? Math.round((completedTasks / tasks.length) * 100)
+        : 0;
+
+      // Calculer le temps total aujourd'hui
+      const totalSeconds = timeEntries.reduce((sum, entry) => sum + (entry.durationSeconds || 0), 0);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const timeToday = `${hours}h ${minutes}m`;
+
+      setStats({
+        tasksInProgress,
+        timeToday,
+        activeProjects,
+        completionRate
+      });
+
+      // Prendre les 5 dernières tâches modifiées
+      const sortedTasks = [...tasks]
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+        .slice(0, 5);
+
+      setRecentTasks(sortedTasks);
+    } catch (error) {
+      console.error('Error loading dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const badges = {
+      todo: { label: 'À faire', class: 'bg-slate-100 text-slate-700' },
+      inProgress: { label: 'En cours', class: 'bg-blue-100 text-blue-700' },
+      done: { label: 'Terminé', class: 'bg-green-100 text-green-700' }
+    };
+    const badge = badges[status] || badges.todo;
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.class}`}>
+        {badge.label}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  const statsCards = [
+    {
+      icon: CheckSquare,
+      title: 'Tâches en cours',
+      value: stats.tasksInProgress,
+      change: 'Tâches actives',
+      color: 'from-blue-500 to-blue-600'
+    },
+    {
+      icon: Clock,
+      title: "Temps aujourd'hui",
+      value: stats.timeToday,
+      change: 'Temps de travail',
+      color: 'from-green-500 to-green-600'
+    },
+    {
+      icon: FolderOpen,
+      title: 'Projets actifs',
+      value: stats.activeProjects,
+      change: 'En cours',
+      color: 'from-purple-500 to-purple-600'
+    },
+    {
+      icon: Target,
+      title: 'Taux de complétion',
+      value: `${stats.completionRate}%`,
+      change: 'Objectifs atteints',
+      color: 'from-orange-500 to-orange-600'
+    }
+  ];
+
   return (
     <div className="space-y-8">
       {/* En-tête */}
       <div>
         <h1 className="text-3xl font-bold text-slate-800 mb-2">
-          Bonjour Marie 👋
+          Bonjour {user?.firstName || user?.username} 👋
         </h1>
         <p className="text-slate-600">
-          Voici un aperçu de votre journée du {new Date().toLocaleDateString('fr-FR', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          Voici un aperçu de votre journée du {new Date().toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
           })}
         </p>
       </div>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
+        {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div key={index} className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-shadow">
@@ -89,47 +169,48 @@ export default function Dashboard() {
         {/* Activité récente */}
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
           <h2 className="text-xl font-semibold text-slate-800 mb-6">Activité récente</h2>
-          <div className="space-y-4">
-            {recentTasks.map((task) => (
-              <div key={task.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                <div className="flex-1">
-                  <h3 className="font-medium text-slate-800">{task.title}</h3>
-                  <p className="text-sm text-slate-500">{task.project}</p>
+
+          {recentTasks.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              <CheckSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>Aucune tâche récente</p>
+              <p className="text-sm mt-2">Créez votre première tâche pour commencer !</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-slate-800">{task.title}</h3>
+                    <p className="text-sm text-slate-500">
+                      {task.project?.name || 'Sans projet'}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    {getStatusBadge(task.status)}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-slate-600">{task.time}</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    task.status === 'terminé' ? 'bg-green-100 text-green-800' :
-                    task.status === 'en cours' ? 'bg-blue-100 text-blue-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {task.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Calendrier mini */}
+        {/* Actions rapides */}
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-slate-800">Cette semaine</h2>
-            <Calendar className="w-5 h-5 text-slate-400" />
-          </div>
+          <h2 className="text-xl font-semibold text-slate-800 mb-6">Actions rapides</h2>
           <div className="space-y-3">
-            <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-              <p className="text-sm font-medium text-blue-800">Réunion client</p>
-              <p className="text-xs text-blue-600">Aujourd'hui 14:00</p>
-            </div>
-            <div className="p-3 bg-green-50 border border-green-100 rounded-lg">
-              <p className="text-sm font-medium text-green-800">Présentation sprint</p>
-              <p className="text-xs text-green-600">Demain 10:00</p>
-            </div>
-            <div className="p-3 bg-purple-50 border border-purple-100 rounded-lg">
-              <p className="text-sm font-medium text-purple-800">Formation équipe</p>
-              <p className="text-xs text-purple-600">Vendredi 09:00</p>
-            </div>
+            <button className="w-full text-left p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all">
+              <p className="font-medium">Nouvelle tâche</p>
+              <p className="text-sm opacity-90">Créer une tâche rapidement</p>
+            </button>
+            <button className="w-full text-left p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors">
+              <p className="font-medium text-slate-800">Démarrer le timer</p>
+              <p className="text-sm text-slate-600">Suivre votre temps de travail</p>
+            </button>
+            <button className="w-full text-left p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors">
+              <p className="font-medium text-slate-800">Nouveau projet</p>
+              <p className="text-sm text-slate-600">Organiser vos objectifs</p>
+            </button>
           </div>
         </div>
       </div>

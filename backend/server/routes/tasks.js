@@ -64,4 +64,76 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Start timer for a task
+router.post('/:id/start', async (req, res) => {
+  try {
+    const task = await db.Task.findOne({
+      where: { id: req.params.id, userId: req.userId }
+    });
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Stop all other running tasks
+    await db.Task.update(
+      { isRunning: false, timerStartedAt: null },
+      { where: { userId: req.userId, isRunning: true } }
+    );
+
+    // Start this task
+    task.isRunning = true;
+    task.timerStartedAt = new Date();
+    await task.save();
+
+    res.json({ task });
+  } catch (error) {
+    console.error('Start timer error:', error);
+    res.status(500).json({ error: 'Failed to start timer' });
+  }
+});
+
+// Stop timer for a task and create TimeEntry
+router.post('/:id/stop', async (req, res) => {
+  try {
+    const task = await db.Task.findOne({
+      where: { id: req.params.id, userId: req.userId }
+    });
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    if (!task.isRunning || !task.timerStartedAt) {
+      return res.status(400).json({ error: 'Timer is not running' });
+    }
+
+    // Calculate elapsed time
+    const endedAt = new Date();
+    const startedAt = new Date(task.timerStartedAt);
+    const durationSeconds = Math.floor((endedAt - startedAt) / 1000);
+
+    // Create TimeEntry
+    const timeEntry = await db.TimeEntry.create({
+      userId: req.userId,
+      taskId: task.id,
+      projectId: task.projectId,
+      description: `Travail sur: ${task.title}`,
+      durationSeconds,
+      startedAt,
+      endedAt,
+      date: startedAt.toISOString().split('T')[0]
+    });
+
+    // Update task
+    task.timeSpent = (task.timeSpent || 0) + durationSeconds;
+    task.isRunning = false;
+    task.timerStartedAt = null;
+    await task.save();
+
+    res.json({ task, timeEntry });
+  } catch (error) {
+    console.error('Stop timer error:', error);
+    res.status(500).json({ error: 'Failed to stop timer' });
+  }
+});
+
 export default router;

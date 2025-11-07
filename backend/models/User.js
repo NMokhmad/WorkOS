@@ -49,6 +49,11 @@ export default (sequelize) => {
         isUrl: true
       }
     },
+    profession: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      field: 'profession'
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

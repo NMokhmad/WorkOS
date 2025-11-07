@@ -1,8 +1,11 @@
 // Topbar - Barre supérieure avec recherche et notifications
 import React from 'react';
-import { Search, Bell, Menu, User } from 'lucide-react';
+import { Search, Bell, Menu, User, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import ActiveTimer from './ActiveTimer';
 
 export default function Topbar({ onMenuClick }) {
+  const { user, logout } = useAuth();
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 h-16 flex items-center justify-between px-4 lg:px-8">
       {/* Menu mobile */}
@@ -29,6 +32,9 @@ export default function Topbar({ onMenuClick }) {
 
       {/* Actions */}
       <div className="flex items-center space-x-4">
+        {/* Active Timer */}
+        <ActiveTimer />
+
         <button 
           className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
           aria-label="Notifications"
@@ -42,9 +48,20 @@ export default function Topbar({ onMenuClick }) {
             <User className="w-5 h-5 text-white" />
           </div>
           <div className="hidden md:block">
-            <p className="text-sm font-medium text-slate-800">Marie Dubois</p>
-            <p className="text-xs text-slate-500">Développeuse</p>
+            <p className="text-sm font-medium text-slate-800">
+              {user?.firstName && user?.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : user?.username || 'Utilisateur'}
+            </p>
+            <p className="text-xs text-slate-500">{user?.profession || 'Utilisateur'}</p>
           </div>
+          <button
+            onClick={logout}
+            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Déconnexion"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </header>

@@ -15,7 +15,7 @@ const router = express.Router();
  */
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, email, password, firstName, lastName, profession } = req.body;
 
     // Validation
     if (!username || !email || !password) {
@@ -56,6 +56,7 @@ router.post('/register', async (req, res) => {
       passwordHash,
       firstName,
       lastName,
+      profession,
       isActive: true
     });
 
