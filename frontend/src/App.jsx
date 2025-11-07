@@ -6,10 +6,28 @@ import CalendarView from './Components/Calendar/CalendarView';
 import NotesList from './Components/Notes/NotesList';
 import TimeTracker from './Components/TimeTracker';
 import Layout from './Layout';
+import Auth from './pages/Auth';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-export default function HomePage() {
+function HomePage() {
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedNote, setSelectedNote] = useState(null);
+  const { user, loading, login, isAuthenticated } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Auth onLogin={login} />;
+  }
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -60,5 +78,13 @@ export default function HomePage() {
       </Layout>
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <HomePage />
+    </AuthProvider>
   );
 }
